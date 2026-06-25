@@ -8,8 +8,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class SaleItem extends Model
 {
     protected $fillable = [
-        'sale_id', 'product_id', 'product_name', 'sku', 'barcode',
-        'quantity', 'unit_price', 'line_total',
+        'sale_id', 'product_id', 'product_variant_id', 'product_name', 'sku', 'barcode',
+        'quantity', 'returned_quantity', 'unit_price', 'purchase_price', 'line_total',
     ];
 
     protected function casts(): array
@@ -29,5 +29,10 @@ class SaleItem extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function variant(): BelongsTo
+    {
+        return $this->belongsTo(ProductVariant::class, 'product_variant_id');
     }
 }

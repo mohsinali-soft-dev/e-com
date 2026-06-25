@@ -41,19 +41,19 @@
     <aside class="card pos-summary">
         <div class="eyebrow">Payment</div>
         <h2 style="margin:4px 0 14px;">Bill Summary</h2>
-        <div class="summary-row"><span>Subtotal</span><strong>Rs. <span id="subtotal">0.00</span></strong></div>
+        <div class="summary-row"><span>Subtotal</span><strong>{{ $adminSetting->currency }} <span id="subtotal">0.00</span></strong></div>
 
         <label for="discount">Discount</label>
         <input id="discount" type="number" step="0.01" min="0" value="0">
 
-        <div class="summary-row total"><span>Total</span><span>Rs. <span id="grandTotal">0.00</span></span></div>
+        <div class="summary-row total"><span>Total</span><span>{{ $adminSetting->currency }} <span id="grandTotal">0.00</span></span></div>
 
         <label for="paidAmount">Paid / Received Amount</label>
         <input id="paidAmount" type="number" step="0.01" min="0" value="0">
 
         <div class="summary-row">
             <span>Change</span>
-            <strong class="text-success">Rs. <span id="changeAmount">0.00</span></strong>
+            <strong class="text-success">{{ $adminSetting->currency }} <span id="changeAmount">0.00</span></strong>
         </div>
 
         <label for="paymentMethod">Payment Method</label>
@@ -61,6 +61,14 @@
             <option value="cash">Cash</option>
             <option value="card">Card</option>
             <option value="bank">Bank Transfer</option>
+        </select>
+
+        <label for="customerId">Customer (optional)</label>
+        <select id="customerId">
+            <option value="">Walk-in customer</option>
+            @foreach($customers as $customer)
+                <option value="{{ $customer->id }}">{{ $customer->name }} {{ $customer->phone ? '— '.$customer->phone : '' }}</option>
+            @endforeach
         </select>
 
         <button id="checkoutButton" class="btn" type="button" onclick="checkout()" style="margin-top:18px;width:100%;">Complete Sale</button>
@@ -80,6 +88,7 @@
     const changeAmount = document.getElementById('changeAmount');
     const paymentMethod = document.getElementById('paymentMethod');
     const checkoutButton = document.getElementById('checkoutButton');
+    const customerId = document.getElementById('customerId');
 
     const money = value => Number(value || 0).toFixed(2);
     const escapeHtml = value => String(value).replace(/[&<>"']/g, character => ({
@@ -121,7 +130,8 @@
     }
 
     function addToCart(product) {
-        const existing = cart.find(item => item.id === product.id);
+        const key = `${product.id}:${product.variant_id || 0}`;
+        const existing = cart.find(item => item.key === key);
         if (existing) {
             if (existing.qty + 1 > product.stock) {
                 posMessage.className = 'text-danger';
@@ -130,21 +140,21 @@
             }
             existing.qty += 1;
         } else {
-            cart.push({...product, price: Number(product.price), stock: Number(product.stock), qty: 1});
+            cart.push({...product, key, price: Number(product.price), stock: Number(product.stock), qty: 1});
         }
         renderCart();
     }
 
-    function updateQty(productId, value) {
-        const item = cart.find(item => item.id === productId);
+    function updateQty(key, value) {
+        const item = cart.find(item => item.key === key);
         if (!item) return;
         const quantity = Math.max(0.001, Math.min(Number(value || 1), item.stock));
         item.qty = quantity;
         renderCart();
     }
 
-    function removeItem(productId) {
-        cart = cart.filter(item => item.id !== productId);
+    function removeItem(key) {
+        cart = cart.filter(item => item.key !== key);
         renderCart();
     }
 
@@ -180,10 +190,10 @@
                 <tr>
                     <td><strong>${escapeHtml(item.name)}</strong><br><small>${escapeHtml(item.sku)} · Stock ${item.stock}</small></td>
                     <td>${escapeHtml(item.barcode)}</td>
-                    <td>Rs. ${money(item.price)}</td>
-                    <td><input type="number" min="0.001" max="${item.stock}" step="${item.sale_type === 'piece' ? '1' : '0.001'}" value="${item.qty}" onchange="updateQty(${item.id}, this.value)" style="width:105px;"></td>
-                    <td><strong>Rs. ${money(item.price * item.qty)}</strong></td>
-                    <td><button class="btn btn-light" type="button" onclick="removeItem(${item.id})">Remove</button></td>
+                    <td>{{ $adminSetting->currency }} ${money(item.price)}</td>
+                    <td><input type="number" min="0.001" max="${item.stock}" step="${item.sale_type === 'piece' ? '1' : '0.001'}" value="${item.qty}" onchange="updateQty('${item.key}', this.value)" style="width:105px;"></td>
+                    <td><strong>{{ $adminSetting->currency }} ${money(item.price * item.qty)}</strong></td>
+                    <td><button class="btn btn-light" type="button" onclick="removeItem('${item.key}')">Remove</button></td>
                 </tr>`).join('');
         }
         cartCount.textContent = cart.length;
@@ -214,7 +224,8 @@
                     items: cart,
                     discount: value.discount,
                     paid_amount: value.paid,
-                    payment_method: paymentMethod.value
+                    payment_method: paymentMethod.value,
+                    customer_id: customerId.value || null
                 })
             });
             const data = await response.json();
@@ -224,7 +235,7 @@
             }
             clearCart(false);
             posMessage.className = 'text-success';
-            posMessage.innerHTML = `Sale completed. Invoice <strong>${escapeHtml(data.invoice_no)}</strong>, change Rs. ${money(data.change_amount)}. <a href="${data.sale_url}">View invoice</a>`;
+            posMessage.innerHTML = `Sale completed. Invoice <strong>${escapeHtml(data.invoice_no)}</strong>, change {{ $adminSetting->currency }} ${money(data.change_amount)}. <a href="${data.sale_url}">View invoice</a>`;
         } catch (error) {
             posMessage.className = 'text-danger';
             posMessage.textContent = error.message;

@@ -10,10 +10,10 @@ class ExampleTest extends TestCase
     /**
      * A basic test example.
      */
-    public function test_the_application_redirects_to_the_dashboard(): void
+    public function test_the_public_home_page_is_available(): void
     {
         $response = $this->get('/');
 
-        $response->assertRedirect(route('admin.dashboard'));
+        $response->assertOk();
     }
 }

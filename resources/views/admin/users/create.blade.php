@@ -1,0 +1,1 @@
+@extends('admin.layout') @section('title','Add User') @section('content')<h1>Add User</h1><form class="card" method="POST" action="{{ route('admin.users.store') }}">@include('admin.users.form')</form>@endsection

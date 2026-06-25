@@ -24,10 +24,10 @@
                     <td><strong>{{ $sale->invoice_no }}</strong></td>
                     <td>{{ $sale->created_at->format('d M Y, h:i A') }}</td>
                     <td>{{ $sale->items_count }}</td>
-                    <td>Rs. {{ number_format($sale->subtotal, 2) }}</td>
-                    <td>Rs. {{ number_format($sale->discount_total, 2) }}</td>
-                    <td><strong>Rs. {{ number_format($sale->grand_total, 2) }}</strong></td>
-                    <td>Rs. {{ number_format($sale->paid_amount, 2) }}</td>
+                    <td>{{ $adminSetting->currency }} {{ number_format($sale->subtotal, 2) }}</td>
+                    <td>{{ $adminSetting->currency }} {{ number_format($sale->discount_total, 2) }}</td>
+                    <td><strong>{{ $adminSetting->currency }} {{ number_format($sale->grand_total, 2) }}</strong></td>
+                    <td>{{ $adminSetting->currency }} {{ number_format($sale->paid_amount, 2) }}</td>
                     <td><span class="badge">{{ ucfirst($sale->payment_method) }}</span></td>
                     <td><a class="btn btn-light" href="{{ route('admin.sales.show', $sale) }}">Details</a></td>
                 </tr>

@@ -64,10 +64,14 @@ class CategoryController extends Controller
     public function update(Request $request, Category $category): RedirectResponse
     {
         $data = $request->validate([
-            'parent_id' => ['nullable', 'exists:categories,id'],
+            'parent_id' => ['nullable', 'exists:categories,id', Rule::notIn([$category->id])],
             'name' => ['required', 'string', 'max:255', Rule::unique('categories', 'name')->ignore($category->id)],
             'is_active' => ['nullable', 'boolean'],
         ]);
+
+        if ($data['parent_id'] && Category::where('parent_id', $category->id)->whereKey($data['parent_id'])->exists()) {
+            return back()->withErrors(['parent_id' => 'A child category cannot become its parent.'])->withInput();
+        }
 
         $data['slug'] = Str::slug($data['name']);
         $data['is_active'] = $request->boolean('is_active');

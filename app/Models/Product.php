@@ -58,6 +58,11 @@ class Product extends Model
         return $this->hasOne(ProductBarcode::class)->where('is_primary', true);
     }
 
+    public function availableStock(): float
+    {
+        return $this->has_variants ? (float) $this->variants()->where('is_active', true)->sum('stock_quantity') : (float) $this->stock_quantity;
+    }
+
     protected function casts(): array
     {
         return [

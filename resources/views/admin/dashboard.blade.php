@@ -10,8 +10,8 @@
 
     <div class="grid">
         <div class="card"><div class="stat-label">Sales Today</div><div class="stat">{{ $salesToday }}</div></div>
-        <div class="card"><div class="stat-label">Revenue Today</div><div class="stat">Rs. {{ number_format($revenueToday, 2) }}</div></div>
-        <div class="card"><div class="stat-label">Total Revenue</div><div class="stat">Rs. {{ number_format($totalRevenue, 2) }}</div></div>
+        <div class="card"><div class="stat-label">Revenue Today</div><div class="stat">{{ $adminSetting->currency }} {{ number_format($revenueToday, 2) }}</div></div>
+        <div class="card"><div class="stat-label">Total Revenue</div><div class="stat">{{ $adminSetting->currency }} {{ number_format($totalRevenue, 2) }}</div></div>
         <div class="card"><div class="stat-label">Low Stock Items</div><div class="stat {{ $lowStockProducts ? 'text-danger' : '' }}">{{ $lowStockProducts }}</div></div>
     </div>
 
@@ -20,7 +20,7 @@
             <div class="page-head"><div><div class="eyebrow">Performance</div><h2>Top Selling Products</h2></div></div>
             @forelse($topProducts as $item)
                 <div class="summary-row">
-                    <div><strong>{{ $item->product_name }}</strong><br><small class="muted">Rs. {{ number_format($item->revenue, 2) }} revenue</small></div>
+                    <div><strong>{{ $item->product_name }}</strong><br><small class="muted">{{ $adminSetting->currency }} {{ number_format($item->revenue, 2) }} revenue</small></div>
                     <span class="badge">{{ number_format($item->quantity_sold, 3) }} sold</span>
                 </div>
             @empty

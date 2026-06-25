@@ -3,13 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Sale extends Model
 {
     protected $fillable = [
-        'invoice_no', 'subtotal', 'discount_total', 'tax_total', 'grand_total',
-        'paid_amount', 'change_amount', 'payment_method', 'status',
+        'customer_id', 'user_id', 'invoice_no', 'subtotal', 'discount_total', 'tax_total', 'grand_total',
+        'paid_amount', 'change_amount', 'refunded_amount', 'payment_method', 'status',
     ];
 
     protected function casts(): array
@@ -27,5 +28,15 @@ class Sale extends Model
     public function items(): HasMany
     {
         return $this->hasMany(SaleItem::class);
+    }
+
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class);
+    }
+
+    public function returns(): HasMany
+    {
+        return $this->hasMany(SaleReturn::class);
     }
 }

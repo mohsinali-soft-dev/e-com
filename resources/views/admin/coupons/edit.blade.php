@@ -1,0 +1,1 @@
+@extends('admin.layout') @section('title','Edit Coupon') @section('content')<h1>Edit Coupon</h1><form class="card" method="POST" action="{{ route('admin.coupons.update',$coupon) }}">@method('PUT') @include('admin.coupons.form')</form>@endsection

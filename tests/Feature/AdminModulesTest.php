@@ -5,12 +5,19 @@ namespace Tests\Feature;
 use App\Models\Product;
 use App\Models\ProductBarcode;
 use App\Models\Unit;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class AdminModulesTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAs(User::factory()->create(['role' => 'admin', 'is_active' => true]));
+    }
 
     public function test_admin_module_pages_render_successfully(): void
     {

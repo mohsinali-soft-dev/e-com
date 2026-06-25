@@ -27,7 +27,7 @@ class InventoryController extends Controller
     {
         return view('admin.inventory.adjustments', [
             'products' => Product::where('is_active', true)->orderBy('name')->get(),
-            'adjustments' => StockAdjustment::with('product')->latest()->paginate(20),
+            'adjustments' => StockAdjustment::with(['product', 'variant'])->latest()->paginate(20),
         ]);
     }
 

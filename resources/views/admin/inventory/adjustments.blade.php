@@ -50,7 +50,7 @@
         @forelse($adjustments as $adjustment)
             <tr>
                 <td>{{ $adjustment->created_at->format('d M Y, h:i A') }}</td>
-                <td><strong>{{ $adjustment->product?->name ?? 'Deleted product' }}</strong></td>
+                <td><strong>{{ $adjustment->product?->name ?? 'Deleted product' }}</strong>@if($adjustment->variant)<br><small>{{ $adjustment->variant->name }}</small>@endif</td>
                 <td><span class="badge">{{ ucfirst($adjustment->type) }}</span></td>
                 <td class="{{ $adjustment->type === 'increase' ? 'text-success' : 'text-danger' }}">{{ $adjustment->type === 'increase' ? '+' : '-' }}{{ number_format($adjustment->quantity, 3) }}</td>
                 <td>{{ number_format($adjustment->stock_before, 3) }}</td>

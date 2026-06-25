@@ -1,0 +1,4 @@
+@extends('store.layout') @section('content')
+<section class="hero"><div class="container"><p style="color:#0f766e;font-weight:800">SUPERMARKET SHOPPING</p><h1>Everyday essentials,<br>ready when you are.</h1><p>Browse available products, choose sizes, and place an order online.</p><a class="btn" href="{{ route('shop.index') }}">Start Shopping</a></div></section>
+<section class="section"><div class="container"><h2>Shop by Category</h2><div class="links">@foreach($categories as $category)<a class="btn btn-light" href="{{ route('shop.index',['category'=>$category->slug]) }}">{{ $category->name }}</a>@endforeach</div><h2 style="margin-top:34px">Latest Products</h2><div class="grid">@foreach($products as $product)@include('store.products.card')@endforeach</div></div></section>
+@endsection

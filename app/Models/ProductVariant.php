@@ -11,8 +11,25 @@ class ProductVariant extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['product_id', 'name', 'sku', 'purchase_price', 'selling_price', 'stock_quantity', 'is_active'];
+    protected $fillable = ['product_id', 'name', 'sku', 'purchase_price', 'selling_price', 'stock_quantity', 'low_stock_alert', 'is_active'];
 
-    public function product(): BelongsTo { return $this->belongsTo(Product::class); }
-    public function barcodes(): HasMany { return $this->hasMany(ProductBarcode::class); }
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
+    }
+
+    public function barcodes(): HasMany
+    {
+        return $this->hasMany(ProductBarcode::class);
+    }
+
+    public function primaryBarcode()
+    {
+        return $this->hasOne(ProductBarcode::class)->where('is_primary', true);
+    }
+
+    public function saleItems(): HasMany
+    {
+        return $this->hasMany(SaleItem::class);
+    }
 }

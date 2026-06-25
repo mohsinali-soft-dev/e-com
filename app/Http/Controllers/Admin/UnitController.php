@@ -5,12 +5,14 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Unit;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class UnitController extends Controller
 {
     public function index()
     {
         $units = Unit::latest()->paginate(15);
+
         return view('admin.units.index', compact('units'));
     }
 
@@ -24,7 +26,7 @@ class UnitController extends Controller
         $data = $request->validate([
             'name' => 'required|string|max:255|unique:units,name',
             'short_name' => 'required|string|max:20',
-            'type' => 'required|string|max:20',
+            'type' => 'required|in:piece,weight,volume,length',
             'decimal_places' => 'required|integer|min:0|max:3',
             'is_active' => 'nullable|boolean',
         ]);
@@ -43,9 +45,9 @@ class UnitController extends Controller
     public function update(Request $request, Unit $unit)
     {
         $data = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => ['required', 'string', 'max:255', Rule::unique('units')->ignore($unit)],
             'short_name' => 'required|string|max:20',
-            'type' => 'required|string|max:20',
+            'type' => 'required|in:piece,weight,volume,length',
             'decimal_places' => 'required|integer|min:0|max:3',
             'is_active' => 'nullable|boolean',
         ]);
@@ -63,6 +65,7 @@ class UnitController extends Controller
         }
 
         $unit->delete();
+
         return redirect()->route('admin.units.index')->with('success', 'Unit deleted successfully.');
     }
 }

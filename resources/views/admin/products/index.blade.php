@@ -21,7 +21,7 @@
 <div data-live-results>
     <div class="table-wrap">
         <table>
-            <thead><tr><th>Image</th><th>Product</th><th>Barcode</th><th>Category</th><th>Unit</th><th>Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Image</th><th>Product</th><th>Barcode</th><th>Category</th><th>Unit</th><th>Price</th><th>Stock</th><th>Status</th><th>Barcode Label</th><th>Actions</th></tr></thead>
             <tbody>
             @forelse($products as $product)
                 <tr>
@@ -36,9 +36,21 @@
                     <td><strong>{{ $product->primaryBarcode?->barcode ?? '-' }}</strong></td>
                     <td>{{ $product->category?->name ?? '-' }}</td>
                     <td>{{ $product->unit?->short_name ?? '-' }}</td>
-                    <td>Rs. {{ number_format($product->selling_price, 2) }}</td>
+                    <td>{{ $adminSetting->currency }} {{ number_format($product->selling_price, 2) }}</td>
                     <td>{{ $product->stock_quantity }}</td>
                     <td><span class="badge">{{ $product->is_active ? 'Active' : 'Inactive' }}</span></td>
+                    <td>
+                        @if($product->primaryBarcode)
+                            <form action="{{ route('admin.barcode-labels.print') }}" method="POST" target="_blank" class="stack" style="flex-wrap:nowrap;">
+                                @csrf
+                                <input type="hidden" name="product_id" value="{{ $product->id }}">
+                                <input type="number" name="quantity" min="1" max="200" value="1" aria-label="Label quantity" style="width:72px;">
+                                <button class="btn btn-light" type="submit">Print</button>
+                            </form>
+                        @else
+                            <span class="muted">No barcode</span>
+                        @endif
+                    </td>
                     <td>
                         <a class="btn btn-light" href="{{ route('admin.products.edit', $product) }}">Edit</a>
                         <form action="{{ route('admin.products.destroy', $product) }}" method="POST" style="display:inline" onsubmit="return confirm('Delete this product?')">
@@ -49,7 +61,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="9" class="empty-state">No products found.</td></tr>
+                <tr><td colspan="10" class="empty-state">No products found.</td></tr>
             @endforelse
             </tbody>
         </table>

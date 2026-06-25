@@ -5,10 +5,13 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductBarcode;
+use App\Models\StockAdjustment;
 use App\Models\Unit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -53,14 +56,28 @@ class ProductController extends Controller
         $data['is_active'] = $request->boolean('is_active', true);
         $data['has_variants'] = false;
 
-        $product = Product::create($data);
-
-        ProductBarcode::create([
-            'product_id' => $product->id,
-            'barcode' => $this->generateBarcode($product->id),
-            'type' => 'store',
-            'is_primary' => true,
-        ]);
+        try {
+            DB::transaction(function () use ($data) {
+                $product = Product::create($data);
+                ProductBarcode::create([
+                    'product_id' => $product->id,
+                    'barcode' => $this->generateBarcode($product->id),
+                    'type' => 'store',
+                    'is_primary' => true,
+                ]);
+                if ((float) $product->stock_quantity > 0) {
+                    StockAdjustment::create([
+                        'product_id' => $product->id, 'type' => 'increase', 'quantity' => $product->stock_quantity,
+                        'stock_before' => 0, 'stock_after' => $product->stock_quantity, 'reason' => 'Opening stock',
+                    ]);
+                }
+            });
+        } catch (\Throwable $exception) {
+            if (! empty($data['image_path'])) {
+                Storage::disk('public')->delete($data['image_path']);
+            }
+            throw $exception;
+        }
 
         return redirect()->route('admin.products.index')->with('success', 'Product created successfully with auto barcode.');
     }
@@ -87,7 +104,18 @@ class ProductController extends Controller
         $data['slug'] = $this->uniqueSlug($data['name'], $product->id);
         $data['is_active'] = $request->boolean('is_active');
 
-        $product->update($data);
+        DB::transaction(function () use ($product, $data) {
+            $before = (float) $product->stock_quantity;
+            $product->update($data);
+            $after = (float) $product->stock_quantity;
+            if ($before !== $after) {
+                StockAdjustment::create([
+                    'product_id' => $product->id, 'type' => $after > $before ? 'increase' : 'decrease',
+                    'quantity' => abs($after - $before), 'stock_before' => $before, 'stock_after' => $after,
+                    'reason' => 'Product form stock correction',
+                ]);
+            }
+        });
 
         if (! $product->barcodes()->where('is_primary', true)->exists()) {
             ProductBarcode::create([
@@ -103,6 +131,10 @@ class ProductController extends Controller
 
     public function destroy(Product $product)
     {
+        if ($product->saleItems()->exists() || $product->stockAdjustments()->exists() || OrderItem::where('product_id', $product->id)->exists()) {
+            return back()->withErrors(['product' => 'Products with stock, sales, or order history cannot be deleted. Deactivate the product instead.']);
+        }
+
         if ($product->image_path) {
             Storage::disk('public')->delete($product->image_path);
         }
