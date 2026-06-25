@@ -1,6 +1,9 @@
 <?php
 
+use App\Http\Controllers\Admin\BrandController;
+use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\UnitController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -10,8 +13,9 @@ Route::get('/', function () {
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
+    Route::resource('categories', CategoryController::class)->except(['show']);
+    Route::resource('brands', BrandController::class)->except(['show']);
+    Route::resource('units', UnitController::class)->except(['show']);
+
     Route::view('/products', 'admin.placeholder', ['title' => 'Products'])->name('products.index');
-    Route::view('/categories', 'admin.placeholder', ['title' => 'Categories'])->name('categories.index');
-    Route::view('/brands', 'admin.placeholder', ['title' => 'Brands'])->name('brands.index');
-    Route::view('/units', 'admin.placeholder', ['title' => 'Units'])->name('units.index');
 });
