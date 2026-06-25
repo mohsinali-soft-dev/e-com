@@ -9,13 +9,26 @@ use App\Models\Product;
 use App\Models\ProductBarcode;
 use App\Models\Unit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        $products = Product::with(['category', 'brand', 'unit', 'barcodes'])
+        $search = $request->string('search')->trim()->toString();
+
+        $products = Product::with(['category', 'brand', 'unit', 'primaryBarcode'])
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('name', 'like', "%{$search}%")
+                        ->orWhere('sku', 'like', "%{$search}%")
+                        ->orWhereHas('barcodes', fn ($barcodes) => $barcodes->where('barcode', 'like', "%{$search}%"))
+                        ->orWhereHas('category', fn ($category) => $category->where('name', 'like', "%{$search}%"))
+                        ->orWhereHas('brand', fn ($brand) => $brand->where('name', 'like', "%{$search}%"));
+                });
+            })
             ->latest()
             ->paginate(15)
             ->withQueryString();
@@ -36,7 +49,7 @@ class ProductController extends Controller
             $data['image_path'] = $request->file('image')->store('products', 'public');
         }
 
-        $data['slug'] = Str::slug($data['name']);
+        $data['slug'] = $this->uniqueSlug($data['name']);
         $data['is_active'] = $request->boolean('is_active', true);
         $data['has_variants'] = false;
 
@@ -55,6 +68,7 @@ class ProductController extends Controller
     public function edit(Product $product)
     {
         $product->load('barcodes');
+
         return view('admin.products.edit', array_merge($this->formData(), compact('product')));
     }
 
@@ -66,7 +80,11 @@ class ProductController extends Controller
             $data['image_path'] = $request->file('image')->store('products', 'public');
         }
 
-        $data['slug'] = Str::slug($data['name']);
+        if ($request->hasFile('image') && $product->image_path) {
+            Storage::disk('public')->delete($product->image_path);
+        }
+
+        $data['slug'] = $this->uniqueSlug($data['name'], $product->id);
         $data['is_active'] = $request->boolean('is_active');
 
         $product->update($data);
@@ -85,7 +103,12 @@ class ProductController extends Controller
 
     public function destroy(Product $product)
     {
+        if ($product->image_path) {
+            Storage::disk('public')->delete($product->image_path);
+        }
+
         $product->delete();
+
         return redirect()->route('admin.products.index')->with('success', 'Product deleted successfully.');
     }
 
@@ -105,14 +128,14 @@ class ProductController extends Controller
             'brand_id' => ['nullable', 'exists:brands,id'],
             'unit_id' => ['required', 'exists:units,id'],
             'name' => ['required', 'string', 'max:255'],
-            'sku' => ['required', 'string', 'max:100'],
+            'sku' => ['required', 'string', 'max:100', Rule::unique('products', 'sku')->ignore($productId)],
             'description' => ['nullable', 'string'],
             'image' => ['nullable', 'image', 'max:2048'],
             'sale_type' => ['required', 'in:piece,weight,volume'],
             'purchase_price' => ['required', 'numeric', 'min:0'],
             'selling_price' => ['required', 'numeric', 'min:0'],
             'stock_quantity' => ['required', 'numeric', 'min:0'],
-            'low_stock_alert' => ['nullable', 'numeric', 'min:0'],
+            'low_stock_alert' => ['nullable', 'numeric', 'min:0', 'lte:stock_quantity'],
             'is_active' => ['nullable', 'boolean'],
         ]);
     }
@@ -120,9 +143,24 @@ class ProductController extends Controller
     private function generateBarcode(int $productId): string
     {
         do {
-            $barcode = 'ECM' . str_pad((string) $productId, 6, '0', STR_PAD_LEFT) . random_int(10, 99);
+            $barcode = 'ECM'.str_pad((string) $productId, 6, '0', STR_PAD_LEFT).random_int(10, 99);
         } while (ProductBarcode::where('barcode', $barcode)->exists());
 
         return $barcode;
+    }
+
+    private function uniqueSlug(string $name, ?int $ignoreId = null): string
+    {
+        $base = Str::slug($name) ?: 'product';
+        $slug = $base;
+        $suffix = 2;
+
+        while (Product::where('slug', $slug)
+            ->when($ignoreId, fn ($query) => $query->whereKeyNot($ignoreId))
+            ->exists()) {
+            $slug = $base.'-'.$suffix++;
+        }
+
+        return $slug;
     }
 }

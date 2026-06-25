@@ -12,9 +12,21 @@ use Illuminate\View\View;
 
 class CategoryController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $categories = Category::with('parent')->latest()->paginate(15);
+        $search = $request->string('search')->trim()->toString();
+
+        $categories = Category::with('parent')
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('name', 'like', "%{$search}%")
+                        ->orWhere('slug', 'like', "%{$search}%")
+                        ->orWhereHas('parent', fn ($parent) => $parent->where('name', 'like', "%{$search}%"));
+                });
+            })
+            ->latest()
+            ->paginate(15)
+            ->withQueryString();
 
         return view('admin.categories.index', compact('categories'));
     }

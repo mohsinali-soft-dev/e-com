@@ -32,8 +32,8 @@
         .brand-subtitle { color: #99f6e4; font-size: 12px; margin-top: 2px; }
         .nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
         .nav a { text-decoration: none; color: #d1fae5; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.08); padding: 11px 12px; border-radius: 14px; font-size: 14px; }
-        .nav a:hover { background: rgba(255,255,255,.16); color: white; }
-        .main { padding: 18px; max-width: 1280px; margin: 0 auto; }
+        .nav a:hover, .nav a.active { background: rgba(255,255,255,.18); color: white; border-color: rgba(255,255,255,.2); }
+        .main { padding: 18px; width: 100%; max-width: 1500px; }
         .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
         .eyebrow { color: var(--primary); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
         h1 { margin: 4px 0 4px; font-size: clamp(26px, 7vw, 38px); letter-spacing: -.04em; }
@@ -57,6 +57,24 @@
         .form-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
         .error { color: var(--danger); font-size: 13px; margin-top: 6px; }
         .alert { margin-bottom: 16px; background: #ecfdf5; border-color: #99f6e4; color: #115e59; }
+        .alert-danger { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+        .muted { color: var(--muted); }
+        .stack { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .metric { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .metric-icon { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 14px; background: var(--primary-soft); color: var(--primary-dark); font-weight: 900; }
+        .product-image { width: 54px; height: 54px; object-fit: cover; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-soft); }
+        .image-preview { display: block; width: 150px; height: 150px; margin-top: 12px; object-fit: cover; border-radius: 16px; border: 1px dashed var(--line); background: var(--surface-soft); }
+        .summary-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+        .summary-row.total { border-bottom: 0; font-size: 20px; font-weight: 900; padding-top: 14px; }
+        .pos-layout { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: start; }
+        .pos-summary { position: static; }
+        .text-success { color: #047857; }
+        .text-danger { color: var(--danger); }
+        .empty-state { padding: 34px; text-align: center; color: var(--muted); }
+        .search-row { display: flex; gap: 10px; flex-wrap: wrap; }
+        .search-row input { flex: 1 1 240px; }
+        .live-search-status { min-height: 20px; margin: 8px 2px 0; font-size: 13px; color: var(--muted); }
+        [data-live-results].is-loading { opacity: .55; pointer-events: none; transition: opacity .15s ease; }
         @media (min-width: 760px) {
             .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -67,6 +85,8 @@
             .sidebar { min-height: 100vh; padding: 28px 18px; }
             .nav { grid-template-columns: 1fr; }
             .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+            .pos-layout { grid-template-columns: minmax(0, 1.7fr) minmax(320px, .7fr); }
+            .pos-summary { position: sticky; top: 28px; }
         }
     </style>
 </head>
@@ -83,22 +103,103 @@
             </div>
         </div>
         <nav class="nav">
-            <a href="{{ route('admin.dashboard') }}">Dashboard</a>
-            <a href="{{ route('admin.products.index') }}">Products</a>
-            <a href="{{ route('admin.categories.index') }}">Categories</a>
-            <a href="{{ route('admin.brands.index') }}">Brands</a>
-            <a href="{{ route('admin.units.index') }}">Units</a>
-            <a href="#">Inventory</a>
-            <a href="#">POS</a>
-            <a href="#">Orders</a>
+            <a class="{{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}">Dashboard</a>
+            <a class="{{ request()->routeIs('admin.products.*') ? 'active' : '' }}" href="{{ route('admin.products.index') }}">Products</a>
+            <a class="{{ request()->routeIs('admin.categories.*') ? 'active' : '' }}" href="{{ route('admin.categories.index') }}">Categories</a>
+            <a class="{{ request()->routeIs('admin.brands.*') ? 'active' : '' }}" href="{{ route('admin.brands.index') }}">Brands</a>
+            <a class="{{ request()->routeIs('admin.units.*') ? 'active' : '' }}" href="{{ route('admin.units.index') }}">Units</a>
+            <a class="{{ request()->routeIs('admin.inventory.low-stock') ? 'active' : '' }}" href="{{ route('admin.inventory.low-stock') }}">Low Stock</a>
+            <a class="{{ request()->routeIs('admin.inventory.adjustments*') ? 'active' : '' }}" href="{{ route('admin.inventory.adjustments') }}">Stock Adjustments</a>
+            <a class="{{ request()->routeIs('admin.pos.*') ? 'active' : '' }}" href="{{ route('admin.pos.index') }}">POS</a>
+            <a class="{{ request()->routeIs('admin.sales.*') ? 'active' : '' }}" href="{{ route('admin.sales.index') }}">Sales</a>
         </nav>
     </aside>
     <main class="main">
         @if(session('success'))
             <div class="card alert">{{ session('success') }}</div>
         @endif
+        @if($errors->any())
+            <div class="card alert alert-danger">
+                <strong>Please fix the following:</strong>
+                <ul>
+                    @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
+                </ul>
+            </div>
+        @endif
         @yield('content')
     </main>
 </div>
+<script>
+    (() => {
+        const forms = document.querySelectorAll('[data-live-search]');
+
+        forms.forEach(form => {
+            const input = form.querySelector('input[name="search"]');
+            const results = document.querySelector('[data-live-results]');
+            const status = form.querySelector('[data-live-search-status]');
+            if (!input || !results) return;
+
+            let timer;
+            let controller;
+
+            const loadResults = async url => {
+                controller?.abort();
+                controller = new AbortController();
+                results.classList.add('is-loading');
+                if (status) status.textContent = 'Searching...';
+
+                try {
+                    const response = await fetch(url, {
+                        headers: {'X-Requested-With': 'XMLHttpRequest'},
+                        signal: controller.signal
+                    });
+                    if (!response.ok) throw new Error('Search request failed.');
+
+                    const html = await response.text();
+                    const documentResult = new DOMParser().parseFromString(html, 'text/html');
+                    const nextResults = documentResult.querySelector('[data-live-results]');
+                    if (!nextResults) throw new Error('Search results were not found.');
+
+                    results.innerHTML = nextResults.innerHTML;
+                    history.replaceState({}, '', url);
+                    if (status) status.textContent = input.value.trim() ? 'Results updated.' : '';
+                } catch (error) {
+                    if (error.name !== 'AbortError' && status) {
+                        status.textContent = 'Could not update results. Please try again.';
+                    }
+                } finally {
+                    results.classList.remove('is-loading');
+                }
+            };
+
+            const search = () => {
+                const url = new URL(form.action || window.location.href);
+                const value = input.value.trim();
+                if (value) url.searchParams.set('search', value);
+                else url.searchParams.delete('search');
+                url.searchParams.delete('page');
+                loadResults(url);
+            };
+
+            input.addEventListener('input', () => {
+                clearTimeout(timer);
+                timer = setTimeout(search, 300);
+            });
+
+            form.addEventListener('submit', event => {
+                event.preventDefault();
+                clearTimeout(timer);
+                search();
+            });
+
+            results.addEventListener('click', event => {
+                const link = event.target.closest('a');
+                if (!link || !link.closest('nav[role="navigation"]')) return;
+                event.preventDefault();
+                loadResults(new URL(link.href));
+            });
+        });
+    })();
+</script>
 </body>
 </html>

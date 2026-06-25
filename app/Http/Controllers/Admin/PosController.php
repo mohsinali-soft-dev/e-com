@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\ProductBarcode;
+use App\Models\Sale;
+use App\Models\StockAdjustment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -33,6 +35,10 @@ class PosController extends Controller
 
         $product = $barcode->product;
 
+        if ((float) $product->stock_quantity <= 0) {
+            return response()->json(['success' => false, 'message' => $product->name.' is out of stock.'], 422);
+        }
+
         return response()->json([
             'success' => true,
             'product' => [
@@ -52,7 +58,8 @@ class PosController extends Controller
     {
         $data = $request->validate([
             'paid_amount' => ['required', 'numeric', 'min:0'],
-            'payment_method' => ['required', 'string', 'max:50'],
+            'discount' => ['nullable', 'numeric', 'min:0'],
+            'payment_method' => ['required', 'in:cash,card,bank'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.id' => ['required', 'exists:products,id'],
             'items.*.qty' => ['required', 'numeric', 'min:0.001'],
@@ -68,7 +75,7 @@ class PosController extends Controller
                 $quantity = (float) $cartItem['qty'];
 
                 if ((float) $product->stock_quantity < $quantity) {
-                    return response()->json(['success' => false, 'message' => $product->name . ' has not enough stock.'], 422);
+                    return response()->json(['success' => false, 'message' => $product->name.' has not enough stock.'], 422);
                 }
 
                 $lineTotal = (float) $product->selling_price * $quantity;
@@ -77,26 +84,28 @@ class PosController extends Controller
                 $items[] = compact('product', 'quantity', 'lineTotal', 'cartItem');
             }
 
-            $paid = (float) $data['paid_amount'];
+            $discount = round(min((float) ($data['discount'] ?? 0), $subtotal), 2);
+            $grandTotal = round($subtotal - $discount, 2);
+            $paid = round((float) $data['paid_amount'], 2);
 
-            if ($paid < $subtotal) {
+            if ($paid < $grandTotal) {
                 return response()->json(['success' => false, 'message' => 'Paid amount is less than total.'], 422);
             }
 
-            $invoiceNo = 'INV-' . now()->format('YmdHis') . random_int(100, 999);
+            do {
+                $invoiceNo = 'INV-'.now()->format('YmdHis').random_int(100, 999);
+            } while (Sale::where('invoice_no', $invoiceNo)->exists());
 
-            $saleId = DB::table('sales')->insertGetId([
+            $sale = Sale::create([
                 'invoice_no' => $invoiceNo,
                 'subtotal' => $subtotal,
-                'discount_total' => 0,
+                'discount_total' => $discount,
                 'tax_total' => 0,
-                'grand_total' => $subtotal,
+                'grand_total' => $grandTotal,
                 'paid_amount' => $paid,
-                'change_amount' => $paid - $subtotal,
+                'change_amount' => $paid - $grandTotal,
                 'payment_method' => $data['payment_method'],
                 'status' => 'completed',
-                'created_at' => now(),
-                'updated_at' => now(),
             ]);
 
             foreach ($items as $item) {
@@ -104,8 +113,7 @@ class PosController extends Controller
                 $quantity = $item['quantity'];
                 $lineTotal = $item['lineTotal'];
 
-                DB::table('sale_items')->insert([
-                    'sale_id' => $saleId,
+                $sale->items()->create([
                     'product_id' => $product->id,
                     'product_name' => $product->name,
                     'sku' => $product->sku,
@@ -113,19 +121,29 @@ class PosController extends Controller
                     'quantity' => $quantity,
                     'unit_price' => $product->selling_price,
                     'line_total' => $lineTotal,
-                    'created_at' => now(),
-                    'updated_at' => now(),
                 ]);
 
-                $product->decrement('stock_quantity', $quantity);
+                $stockBefore = (float) $product->stock_quantity;
+                $stockAfter = $stockBefore - $quantity;
+                $product->update(['stock_quantity' => $stockAfter]);
+                StockAdjustment::create([
+                    'product_id' => $product->id,
+                    'type' => 'decrease',
+                    'quantity' => $quantity,
+                    'stock_before' => $stockBefore,
+                    'stock_after' => $stockAfter,
+                    'reason' => 'Sale '.$invoiceNo,
+                    'notes' => 'Automatically deducted during POS checkout.',
+                ]);
             }
 
             return response()->json([
                 'success' => true,
                 'message' => 'Sale completed successfully.',
                 'invoice_no' => $invoiceNo,
-                'grand_total' => $subtotal,
-                'change_amount' => $paid - $subtotal,
+                'grand_total' => $grandTotal,
+                'change_amount' => $paid - $grandTotal,
+                'sale_url' => route('admin.sales.show', $sale),
             ]);
         });
     }

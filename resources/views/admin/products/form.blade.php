@@ -13,16 +13,15 @@
     </div>
     <div>
         <label>Product Image</label>
-        <input type="file" name="image" accept="image/*">
+        <input id="imageInput" type="file" name="image" accept="image/*">
         @error('image') <div class="error">{{ $message }}</div> @enderror
-        @if(isset($product) && $product->image_path)
-            <p>Current image: {{ $product->image_path }}</p>
-        @endif
-    </div>
-    <div>
-        <label>Auto Barcode</label>
-        <input type="text" value="{{ isset($product) ? ($product->barcodes->first()?->barcode ?? 'Will auto-generate') : 'Will auto-generate after save' }}" disabled>
-        <p>System generates unique store barcode automatically.</p>
+        <img
+            id="imagePreview"
+            class="image-preview"
+            src="{{ isset($product) && $product->image_path ? asset('storage/'.$product->image_path) : '' }}"
+            alt="Product image preview"
+            @if(!isset($product) || !$product->image_path) style="display:none;" @endif
+        >
     </div>
     <div>
         <label>Sale Type</label>
@@ -70,13 +69,29 @@
     </div>
     <div>
         <label>Stock Quantity</label>
-        <input type="number" step="0.001" name="stock_quantity" value="{{ old('stock_quantity', $product->stock_quantity ?? 0) }}">
+        <input id="stockQuantity" type="number" min="0" step="0.001" name="stock_quantity" value="{{ old('stock_quantity', $product->stock_quantity ?? 0) }}">
     </div>
     <div>
         <label>Low Stock Alert</label>
-        <input type="number" step="0.001" name="low_stock_alert" value="{{ old('low_stock_alert', $product->low_stock_alert ?? 0) }}">
+        <input id="lowStockAlert" type="number" min="0" max="{{ old('stock_quantity', $product->stock_quantity ?? 0) }}" step="0.001" name="low_stock_alert" value="{{ old('low_stock_alert', $product->low_stock_alert ?? 0) }}">
+        @error('low_stock_alert') <div class="error">{{ $message }}</div> @enderror
     </div>
 </div>
+
+<script>
+    document.getElementById('imageInput')?.addEventListener('change', function (event) {
+        const preview = document.getElementById('imagePreview');
+        const file = event.target.files?.[0];
+        if (!file) return;
+        preview.src = URL.createObjectURL(file);
+        preview.style.display = 'block';
+        preview.onload = () => URL.revokeObjectURL(preview.src);
+    });
+
+    document.getElementById('stockQuantity')?.addEventListener('input', function () {
+        document.getElementById('lowStockAlert').max = Math.max(Number(this.value || 0), 0);
+    });
+</script>
 
 <label>Description</label>
 <textarea name="description" rows="4" placeholder="Product details">{{ old('description', $product->description ?? '') }}</textarea>
