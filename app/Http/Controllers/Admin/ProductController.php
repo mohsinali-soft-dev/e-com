@@ -31,8 +31,10 @@ class ProductController extends Controller
     public function store(Request $request)
     {
         $data = $this->validatedData($request);
-        $barcode = $data['barcode'] ?? null;
-        unset($data['barcode']);
+
+        if ($request->hasFile('image')) {
+            $data['image_path'] = $request->file('image')->store('products', 'public');
+        }
 
         $data['slug'] = Str::slug($data['name']);
         $data['is_active'] = $request->boolean('is_active', true);
@@ -40,16 +42,14 @@ class ProductController extends Controller
 
         $product = Product::create($data);
 
-        if ($barcode) {
-            ProductBarcode::create([
-                'product_id' => $product->id,
-                'barcode' => $barcode,
-                'type' => 'store',
-                'is_primary' => true,
-            ]);
-        }
+        ProductBarcode::create([
+            'product_id' => $product->id,
+            'barcode' => $this->generateBarcode($product->id),
+            'type' => 'store',
+            'is_primary' => true,
+        ]);
 
-        return redirect()->route('admin.products.index')->with('success', 'Product created successfully.');
+        return redirect()->route('admin.products.index')->with('success', 'Product created successfully with auto barcode.');
     }
 
     public function edit(Product $product)
@@ -61,19 +61,23 @@ class ProductController extends Controller
     public function update(Request $request, Product $product)
     {
         $data = $this->validatedData($request, $product->id);
-        $barcode = $data['barcode'] ?? null;
-        unset($data['barcode']);
+
+        if ($request->hasFile('image')) {
+            $data['image_path'] = $request->file('image')->store('products', 'public');
+        }
 
         $data['slug'] = Str::slug($data['name']);
         $data['is_active'] = $request->boolean('is_active');
 
         $product->update($data);
 
-        if ($barcode) {
-            ProductBarcode::updateOrCreate(
-                ['product_id' => $product->id, 'is_primary' => true],
-                ['barcode' => $barcode, 'type' => 'store']
-            );
+        if (! $product->barcodes()->where('is_primary', true)->exists()) {
+            ProductBarcode::create([
+                'product_id' => $product->id,
+                'barcode' => $this->generateBarcode($product->id),
+                'type' => 'store',
+                'is_primary' => true,
+            ]);
         }
 
         return redirect()->route('admin.products.index')->with('success', 'Product updated successfully.');
@@ -102,8 +106,8 @@ class ProductController extends Controller
             'unit_id' => ['required', 'exists:units,id'],
             'name' => ['required', 'string', 'max:255'],
             'sku' => ['required', 'string', 'max:100'],
-            'barcode' => ['nullable', 'string', 'max:100'],
             'description' => ['nullable', 'string'],
+            'image' => ['nullable', 'image', 'max:2048'],
             'sale_type' => ['required', 'in:piece,weight,volume'],
             'purchase_price' => ['required', 'numeric', 'min:0'],
             'selling_price' => ['required', 'numeric', 'min:0'],
@@ -111,5 +115,14 @@ class ProductController extends Controller
             'low_stock_alert' => ['nullable', 'numeric', 'min:0'],
             'is_active' => ['nullable', 'boolean'],
         ]);
+    }
+
+    private function generateBarcode(int $productId): string
+    {
+        do {
+            $barcode = 'ECM' . str_pad((string) $productId, 6, '0', STR_PAD_LEFT) . random_int(10, 99);
+        } while (ProductBarcode::where('barcode', $barcode)->exists());
+
+        return $barcode;
     }
 }
