@@ -17,6 +17,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
     Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
     Route::post('/pos/scan', [PosController::class, 'scan'])->name('pos.scan');
+    Route::post('/pos/checkout', [PosController::class, 'checkout'])->name('pos.checkout');
 
     Route::resource('categories', CategoryController::class)->except(['show']);
     Route::resource('brands', BrandController::class)->except(['show']);
