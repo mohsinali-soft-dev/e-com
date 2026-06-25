@@ -12,9 +12,17 @@
         @error('sku') <div class="error">{{ $message }}</div> @enderror
     </div>
     <div>
-        <label>Barcode</label>
-        <input type="text" name="barcode" value="{{ old('barcode', isset($product) ? $product->barcodes->first()?->barcode : '') }}" placeholder="Scan or type barcode">
-        @error('barcode') <div class="error">{{ $message }}</div> @enderror
+        <label>Product Image</label>
+        <input type="file" name="image" accept="image/*">
+        @error('image') <div class="error">{{ $message }}</div> @enderror
+        @if(isset($product) && $product->image_path)
+            <p>Current image: {{ $product->image_path }}</p>
+        @endif
+    </div>
+    <div>
+        <label>Auto Barcode</label>
+        <input type="text" value="{{ isset($product) ? ($product->barcodes->first()?->barcode ?? 'Will auto-generate') : 'Will auto-generate after save' }}" disabled>
+        <p>System generates unique store barcode automatically.</p>
     </div>
     <div>
         <label>Sale Type</label>
