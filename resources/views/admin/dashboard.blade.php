@@ -21,7 +21,7 @@
             @forelse($topProducts as $item)
                 <div class="summary-row">
                     <div><strong>{{ $item->product_name }}</strong><br><small class="muted">{{ $adminSetting->currency }} {{ number_format($item->revenue, 2) }} revenue</small></div>
-                    <span class="badge">{{ number_format($item->quantity_sold, 3) }} sold</span>
+                    <span class="badge">{{ number_format($item->quantity_sold, 2) }} sold</span>
                 </div>
             @empty
                 <div class="empty-state">No sales recorded yet.</div>

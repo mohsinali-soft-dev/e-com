@@ -1,1 +1,1 @@
-@extends('admin.layout') @section('title','Edit User') @section('content')<h1>Edit User</h1><form class="card" method="POST" action="{{ route('admin.users.update',$user) }}">@method('PUT') @include('admin.users.form')</form>@endsection
+@extends('admin.layout') @section('title','Edit User') @section('content')<h1>Edit User</h1><form class="card" method="POST" action="{{ route('admin.users.update',$user) }}" enctype="multipart/form-data">@method('PUT') @include('admin.users.form')</form>@endsection

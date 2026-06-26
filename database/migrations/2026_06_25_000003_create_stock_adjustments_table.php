@@ -13,9 +13,9 @@ return new class extends Migration
             $table->foreignId('product_id')->constrained()->cascadeOnDelete();
             $table->foreignId('product_variant_id')->nullable()->constrained()->nullOnDelete();
             $table->enum('type', ['increase', 'decrease']);
-            $table->decimal('quantity', 12, 3);
-            $table->decimal('stock_before', 12, 3);
-            $table->decimal('stock_after', 12, 3);
+            $table->decimal('quantity', 12, 2);
+            $table->decimal('stock_before', 12, 2);
+            $table->decimal('stock_after', 12, 2);
             $table->string('reason');
             $table->text('notes')->nullable();
             $table->timestamps();

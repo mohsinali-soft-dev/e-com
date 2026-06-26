@@ -48,8 +48,8 @@ class ProductVariant extends Model
         return [
             'purchase_price' => 'decimal:2',
             'selling_price' => 'decimal:2',
-            'stock_quantity' => 'decimal:3',
-            'low_stock_alert' => 'decimal:3',
+            'stock_quantity' => 'decimal:2',
+            'low_stock_alert' => 'decimal:2',
             'is_active' => 'boolean',
         ];
     }

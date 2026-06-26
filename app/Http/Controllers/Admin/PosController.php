@@ -75,7 +75,7 @@ class PosController extends Controller
             'items' => ['required', 'array', 'min:1'],
             'items.*.id' => ['required', 'exists:products,id'],
             'items.*.variant_id' => ['nullable', 'exists:product_variants,id'],
-            'items.*.qty' => ['required', 'numeric', 'min:0.001'],
+            'items.*.qty' => ['required', 'numeric', 'min:0.01'],
             'items.*.barcode' => ['nullable', 'string', 'max:100'],
         ]);
 

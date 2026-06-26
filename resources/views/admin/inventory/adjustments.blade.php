@@ -17,7 +17,7 @@
                 <select name="product_id" required>
                     <option value="">Select product</option>
                     @foreach($products as $product)
-                        <option value="{{ $product->id }}" @selected(old('product_id') == $product->id)>{{ $product->name }} — stock {{ $product->stock_quantity }}</option>
+                        <option value="{{ $product->id }}" @selected(old('product_id') == $product->id)>{{ $product->name }} - stock {{ number_format($product->stock_quantity, 2) }}</option>
                     @endforeach
                 </select>
             </div>
@@ -30,7 +30,7 @@
             </div>
             <div>
                 <label>Quantity</label>
-                <input type="number" name="quantity" min="0.001" step="0.001" value="{{ old('quantity') }}" required>
+                <input type="number" name="quantity" min="0.01" step="0.01" value="{{ old('quantity') }}" required>
             </div>
             <div>
                 <label>Reason</label>
@@ -52,9 +52,9 @@
                 <td>{{ $adjustment->created_at->format('d M Y, h:i A') }}</td>
                 <td><strong>{{ $adjustment->product?->name ?? 'Deleted product' }}</strong>@if($adjustment->variant)<br><small>{{ $adjustment->variant->name }}</small>@endif</td>
                 <td><span class="badge">{{ ucfirst($adjustment->type) }}</span></td>
-                <td class="{{ $adjustment->type === 'increase' ? 'text-success' : 'text-danger' }}">{{ $adjustment->type === 'increase' ? '+' : '-' }}{{ number_format($adjustment->quantity, 3) }}</td>
-                <td>{{ number_format($adjustment->stock_before, 3) }}</td>
-                <td><strong>{{ number_format($adjustment->stock_after, 3) }}</strong></td>
+                <td class="{{ $adjustment->type === 'increase' ? 'text-success' : 'text-danger' }}">{{ $adjustment->type === 'increase' ? '+' : '-' }}{{ number_format($adjustment->quantity, 2) }}</td>
+                <td>{{ number_format($adjustment->stock_before, 2) }}</td>
+                <td><strong>{{ number_format($adjustment->stock_after, 2) }}</strong></td>
                 <td>{{ $adjustment->reason }}@if($adjustment->notes)<br><small class="muted">{{ $adjustment->notes }}</small>@endif</td>
             </tr>
         @empty

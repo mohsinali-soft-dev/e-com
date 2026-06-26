@@ -29,7 +29,7 @@ return new class extends Migration
             $table->string('product_name');
             $table->string('sku');
             $table->string('barcode')->nullable();
-            $table->decimal('quantity', 12, 3);
+            $table->decimal('quantity', 12, 2);
             $table->decimal('unit_price', 12, 2);
             $table->decimal('line_total', 12, 2);
             $table->timestamps();

@@ -32,7 +32,7 @@
     };
     const wholeQuantity = item => item.sale_type === 'piece';
     const normalizeQuantity = (item, value) => {
-        const minimum = wholeQuantity(item) ? 1 : 0.001;
+        const minimum = wholeQuantity(item) ? 1 : 0.01;
         const parsed = Math.max(minimum, Math.min(Number(value || minimum), item.stock));
         return wholeQuantity(item) ? Math.floor(parsed) : parsed;
     };
@@ -132,7 +132,7 @@
                     <td><strong>${escapeHtml(item.name)}</strong><br><small>${escapeHtml(item.sku)} - Stock ${item.stock}</small></td>
                     <td>${escapeHtml(item.barcode)}</td>
                     <td>${escapeHtml(config.currency)} ${money(item.price)}</td>
-                    <td><input type="number" min="${wholeQuantity(item) ? 1 : 0.001}" max="${item.stock}" step="${wholeQuantity(item) ? 1 : 0.001}" value="${item.qty}" data-cart-qty="${escapeHtml(item.key)}" style="width:105px;"></td>
+                    <td><input type="number" min="${wholeQuantity(item) ? 1 : 0.01}" max="${item.stock}" step="${wholeQuantity(item) ? 1 : 0.01}" value="${item.qty}" data-cart-qty="${escapeHtml(item.key)}" style="width:105px;"></td>
                     <td><strong>${escapeHtml(config.currency)} ${money(item.price * item.qty)}</strong></td>
                     <td><button class="btn btn-light" type="button" data-remove-item="${escapeHtml(item.key)}">Remove</button></td>
                 </tr>`).join('');

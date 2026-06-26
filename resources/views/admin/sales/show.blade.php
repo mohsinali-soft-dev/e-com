@@ -19,7 +19,7 @@
                     <td>{{ $item->sku }}</td>
                     <td>{{ $item->barcode ?: '-' }}</td>
                     <td>{{ $adminSetting->currency }} {{ number_format($item->unit_price, 2) }}</td>
-                    <td>{{ number_format($item->quantity, 3) }}</td>
+                    <td>{{ number_format($item->quantity, 2) }}</td>
                     <td><strong>{{ $adminSetting->currency }} {{ number_format($item->line_total, 2) }}</strong></td>
                 </tr>
             @endforeach

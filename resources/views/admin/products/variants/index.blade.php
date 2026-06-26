@@ -13,8 +13,8 @@
         <input name="sku" placeholder="SKU" required>
         <input type="number" step=".01" min="0" name="purchase_price" placeholder="Purchase price" required>
         <input type="number" step=".01" min="0" name="selling_price" placeholder="Selling price" required>
-        <input type="number" step=".001" min="0" name="stock_quantity" placeholder="Stock" required>
-        <input type="number" step=".001" min="0" name="low_stock_alert" placeholder="Low stock alert" required>
+        <input type="number" step="0.01" min="0" name="stock_quantity" placeholder="Stock" required>
+        <input type="number" step="0.01" min="0" name="low_stock_alert" placeholder="Low stock alert" required>
     </div>
     <label><input style="width:auto" type="checkbox" name="is_active" value="1" checked> Active</label>
     <button class="btn">Add Variant</button>
@@ -30,8 +30,8 @@
             <div><label>Barcode</label><input value="{{ $variant->primaryBarcode?->barcode }}" disabled></div>
             <div><label>Purchase</label><input type="number" step=".01" min="0" name="purchase_price" value="{{ $variant->purchase_price }}" required></div>
             <div><label>Sale</label><input type="number" step=".01" min="0" name="selling_price" value="{{ $variant->selling_price }}" required></div>
-            <div><label>Stock</label><input type="number" step=".001" min="0" name="stock_quantity" value="{{ $variant->stock_quantity }}" required></div>
-            <div><label>Low Stock Alert</label><input type="number" step=".001" min="0" max="{{ $variant->stock_quantity }}" name="low_stock_alert" value="{{ $variant->low_stock_alert }}" required></div>
+            <div><label>Stock</label><input type="number" step="0.01" min="0" name="stock_quantity" value="{{ $variant->stock_quantity }}" required></div>
+            <div><label>Low Stock Alert</label><input type="number" step="0.01" min="0" max="{{ $variant->stock_quantity }}" name="low_stock_alert" value="{{ $variant->low_stock_alert }}" required></div>
         </div>
         <label><input style="width:auto" type="checkbox" name="is_active" value="1" @checked($variant->is_active)> Active</label>
         <button class="btn">Update Variant</button>

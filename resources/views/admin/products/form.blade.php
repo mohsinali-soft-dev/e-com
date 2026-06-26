@@ -73,7 +73,7 @@
     </div>
     <div>
         <label>Low Stock Alert</label>
-        <input id="lowStockAlert" type="number" min="0" max="{{ old('stock_quantity', $product->stock_quantity ?? 0) }}" step="0.001" name="low_stock_alert" value="{{ old('low_stock_alert', $product->low_stock_alert ?? 0) }}">
+        <input id="lowStockAlert" type="number" min="0" max="{{ old('stock_quantity', $product->stock_quantity ?? 0) }}" step="0.01" name="low_stock_alert" value="{{ old('low_stock_alert', $product->low_stock_alert ?? 0) }}">
         @error('low_stock_alert') <div class="error">{{ $message }}</div> @enderror
     </div>
 </div>

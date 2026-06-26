@@ -67,7 +67,7 @@ return new class extends Migration
             $table->string('product_name');
             $table->string('variant_name')->nullable();
             $table->string('sku');
-            $table->decimal('quantity', 12, 3);
+            $table->decimal('quantity', 12, 2);
             $table->decimal('unit_price', 12, 2);
             $table->decimal('purchase_price', 12, 2)->default(0);
             $table->decimal('line_total', 12, 2);
@@ -96,7 +96,7 @@ return new class extends Migration
         Schema::table('sale_items', function (Blueprint $table) {
             $table->foreignId('product_variant_id')->nullable()->after('product_id')->constrained()->restrictOnDelete();
             $table->decimal('purchase_price', 12, 2)->default(0)->after('unit_price');
-            $table->decimal('returned_quantity', 12, 3)->default(0)->after('quantity');
+            $table->decimal('returned_quantity', 12, 2)->default(0)->after('quantity');
         });
 
         Schema::create('sale_returns', function (Blueprint $table) {
@@ -114,7 +114,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('sale_return_id')->constrained()->cascadeOnDelete();
             $table->foreignId('sale_item_id')->constrained()->restrictOnDelete();
-            $table->decimal('quantity', 12, 3);
+            $table->decimal('quantity', 12, 2);
             $table->decimal('unit_refund', 12, 2);
             $table->decimal('line_refund', 12, 2);
             $table->timestamps();

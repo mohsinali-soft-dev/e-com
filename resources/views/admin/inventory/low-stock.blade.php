@@ -17,8 +17,8 @@
                 <td><strong>{{ $product->name }}</strong><br><small>{{ $product->sku }}</small></td>
                 <td>{{ $product->primaryBarcode?->barcode ?? '-' }}</td>
                 <td>{{ $product->category?->name ?? '-' }}</td>
-                <td><strong class="text-danger">{{ number_format($product->stock_quantity, 3) }} {{ $product->unit?->short_name }}</strong></td>
-                <td>{{ number_format($product->low_stock_alert, 3) }}</td>
+                <td><strong class="text-danger">{{ number_format($product->stock_quantity, 2) }} {{ $product->unit?->short_name }}</strong></td>
+                <td>{{ number_format($product->low_stock_alert, 2) }}</td>
                 <td><span class="badge">{{ $product->stock_quantity <= 0 ? 'Out of stock' : 'Low stock' }}</span></td>
                 <td><a class="btn btn-light" href="{{ route('admin.products.edit', $product) }}">Product</a></td>
             </tr>

@@ -102,6 +102,17 @@
         });
     });
 
+    document.querySelectorAll('[data-image-preview-input]').forEach(input => {
+        input.addEventListener('change', event => {
+            const preview = document.querySelector(input.dataset.imagePreviewInput);
+            const file = event.target.files?.[0];
+            if (!preview || !file) return;
+            preview.src = URL.createObjectURL(file);
+            preview.style.display = 'block';
+            preview.onload = () => URL.revokeObjectURL(preview.src);
+        });
+    });
+
     document.getElementById('imageInput')?.addEventListener('change', event => {
         const preview = document.getElementById('imagePreview');
         const file = event.target.files?.[0];
@@ -114,5 +125,35 @@
     document.getElementById('stockQuantity')?.addEventListener('input', event => {
         const lowStockAlert = document.getElementById('lowStockAlert');
         if (lowStockAlert) lowStockAlert.max = Math.max(Number(event.target.value || 0), 0);
+    });
+
+    document.addEventListener('click', event => {
+        const opener = event.target.closest('[data-variant-drawer-open]');
+        if (opener) {
+            const drawer = document.getElementById(opener.dataset.variantDrawerOpen);
+            if (!drawer) return;
+            drawer.classList.add('is-open');
+            drawer.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('variant-drawer-open');
+            drawer.querySelector('[data-variant-drawer-close]')?.focus();
+            return;
+        }
+
+        const closer = event.target.closest('[data-variant-drawer-close]');
+        if (!closer) return;
+        const drawer = closer.closest('.variant-drawer');
+        if (!drawer) return;
+        drawer.classList.remove('is-open');
+        drawer.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('variant-drawer-open');
+    });
+
+    document.addEventListener('keydown', event => {
+        if (event.key !== 'Escape') return;
+        document.querySelectorAll('.variant-drawer.is-open').forEach(drawer => {
+            drawer.classList.remove('is-open');
+            drawer.setAttribute('aria-hidden', 'true');
+        });
+        document.body.classList.remove('variant-drawer-open');
     });
 })();
