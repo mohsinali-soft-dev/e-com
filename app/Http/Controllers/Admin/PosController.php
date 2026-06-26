@@ -23,6 +23,103 @@ class PosController extends Controller
         ]);
     }
 
+    public function search(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'q' => ['required', 'string', 'max:100'],
+        ]);
+
+        $term = trim($data['q']);
+        if (mb_strlen($term) < 2) {
+            return response()->json(['success' => true, 'results' => []]);
+        }
+
+        $results = collect();
+        $seen = [];
+        $pushResult = function (Product $product, ?ProductVariant $variant, ?ProductBarcode $barcode, string $matchType, int $priority) use (&$results, &$seen) {
+            if (! $product->is_active) {
+                return;
+            }
+            if ($variant && ! $variant->is_active) {
+                return;
+            }
+            if ($product->has_variants && ! $variant) {
+                return;
+            }
+
+            $stockable = $variant ?: $product;
+            $stock = (float) $stockable->stock_quantity;
+            $key = $product->id.':'.($variant?->id ?? 0);
+            if (isset($seen[$key])) {
+                return;
+            }
+            $seen[$key] = true;
+
+            $results->push([
+                'key' => $key,
+                'priority' => $priority,
+                'match_type' => $matchType,
+                'exact' => $priority <= 4,
+                'selectable' => $stock > 0,
+                'id' => $product->id,
+                'variant_id' => $variant?->id,
+                'name' => $product->name.($variant ? ' - '.$variant->name : ''),
+                'product_name' => $product->name,
+                'variant_name' => $variant?->name,
+                'sku' => $variant?->sku ?? $product->sku,
+                'barcode' => $barcode?->barcode ?? $variant?->primaryBarcode?->barcode ?? $product->primaryBarcode?->barcode,
+                'unit' => $product->unit?->short_name,
+                'sale_type' => $product->sale_type,
+                'price' => (float) ($variant?->selling_price ?? $product->selling_price),
+                'stock' => $stock,
+                'image_url' => $product->image_path ? asset('storage/'.$product->image_path) : null,
+            ]);
+        };
+
+        ProductBarcode::with(['product.unit', 'product.primaryBarcode', 'variant.primaryBarcode'])
+            ->where('barcode', $term)
+            ->limit(10)
+            ->get()
+            ->each(fn (ProductBarcode $barcode) => $pushResult($barcode->product, $barcode->variant, $barcode, $barcode->variant ? 'exact_variant_barcode' : 'exact_barcode', $barcode->variant ? 3 : 1));
+
+        Product::with(['unit', 'primaryBarcode'])
+            ->where('is_active', true)
+            ->where('sku', $term)
+            ->limit(10)
+            ->get()
+            ->each(fn (Product $product) => $pushResult($product, null, $product->primaryBarcode, 'exact_sku', 2));
+
+        ProductVariant::with(['product.unit', 'product.primaryBarcode', 'primaryBarcode'])
+            ->where('is_active', true)
+            ->where('sku', $term)
+            ->limit(10)
+            ->get()
+            ->each(fn (ProductVariant $variant) => $pushResult($variant->product, $variant, $variant->primaryBarcode, 'exact_variant_sku', 4));
+
+        if ($results->count() < 10) {
+            Product::with(['unit', 'primaryBarcode'])
+                ->where('is_active', true)
+                ->where('name', 'like', '%'.$term.'%')
+                ->limit(10)
+                ->get()
+                ->each(fn (Product $product) => $pushResult($product, null, $product->primaryBarcode, 'product_name', 5));
+        }
+
+        if ($results->count() < 10) {
+            ProductVariant::with(['product.unit', 'product.primaryBarcode', 'primaryBarcode'])
+                ->where('is_active', true)
+                ->where('name', 'like', '%'.$term.'%')
+                ->limit(10)
+                ->get()
+                ->each(fn (ProductVariant $variant) => $pushResult($variant->product, $variant, $variant->primaryBarcode, 'variant_name', 6));
+        }
+
+        return response()->json([
+            'success' => true,
+            'results' => $results->sortBy('priority')->take(10)->values(),
+        ]);
+    }
+
     public function scan(Request $request): JsonResponse
     {
         $data = $request->validate([
