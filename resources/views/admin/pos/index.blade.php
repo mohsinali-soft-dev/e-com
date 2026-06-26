@@ -7,20 +7,21 @@
     <div>
         <div class="eyebrow">Checkout</div>
         <h1>Point of Sale</h1>
-        <p>Scan a generated product barcode and complete the customer's sale.</p>
+        <p>Scan barcode or search by barcode, SKU, product name, or variant.</p>
     </div>
     <a class="btn btn-light" href="{{ route('admin.sales.index') }}">View Sales</a>
 </div>
 
-<div class="pos-layout" data-pos data-scan-url="{{ route('admin.pos.scan') }}" data-checkout-url="{{ route('admin.pos.checkout') }}" data-csrf="{{ csrf_token() }}" data-currency="{{ $adminSetting->currency }}">
+<div class="pos-layout" data-pos data-search-url="{{ route('admin.pos.search') }}" data-scan-url="{{ route('admin.pos.scan') }}" data-checkout-url="{{ route('admin.pos.checkout') }}" data-csrf="{{ csrf_token() }}" data-currency="{{ $adminSetting->currency }}">
     <div>
-        <div class="card">
-            <label for="barcodeInput">Barcode Scanner</label>
-            <div class="search-row">
-                <input id="barcodeInput" type="text" placeholder="Scan barcode and press Enter" autofocus autocomplete="off">
-                <button class="btn" type="button" data-scan-current>Add Product</button>
-                <button class="btn btn-light" type="button" data-clear-cart>Clear</button>
+        <div class="card pos-search-card">
+            <label for="barcodeInput">Smart POS Search</label>
+            <div class="pos-search-box">
+                <input id="barcodeInput" type="search" placeholder="Scan barcode or search by barcode, SKU, or product name..." autofocus autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="posSearchResults">
+                <button class="btn btn-light" type="button" data-clear-search>Clear</button>
+                <button class="btn btn-light" type="button" data-clear-cart>Clear Cart</button>
             </div>
+            <div id="posSearchResults" class="pos-search-results" role="listbox" hidden></div>
             <p id="posMessage" class="muted" aria-live="polite" style="margin-bottom:0;"></p>
         </div>
 
