@@ -8,10 +8,6 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('products', function (Blueprint $table) {
-            $table->string('image_path')->nullable()->after('description');
-        });
-
         Schema::create('sales', function (Blueprint $table) {
             $table->id();
             $table->string('invoice_no')->unique();
@@ -45,8 +41,5 @@ return new class extends Migration
         Schema::dropIfExists('sale_items');
         Schema::dropIfExists('sales');
 
-        Schema::table('products', function (Blueprint $table) {
-            $table->dropColumn('image_path');
-        });
     }
 };

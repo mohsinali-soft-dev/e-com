@@ -49,8 +49,14 @@ class CheckoutController extends Controller
             foreach ($cart as $cartItem) {
                 $product = Product::lockForUpdate()->where('is_active', true)->findOrFail($cartItem['product_id']);
                 $variant = $cartItem['variant_id'] ? ProductVariant::lockForUpdate()->where('product_id', $product->id)->where('is_active', true)->findOrFail($cartItem['variant_id']) : null;
+                if ($product->has_variants && ! $variant) {
+                    throw ValidationException::withMessages(['cart' => $product->name.' requires a variant.']);
+                }
                 $stockable = $variant ?: $product;
                 $quantity = (float) $cartItem['quantity'];
+                if ($product->sale_type === 'piece' && floor($quantity) !== $quantity) {
+                    throw ValidationException::withMessages(['cart' => $product->name.' requires a whole quantity.']);
+                }
                 if ($quantity > (float) $stockable->stock_quantity) {
                     throw ValidationException::withMessages(['cart' => $product->name.' no longer has enough stock.']);
                 }

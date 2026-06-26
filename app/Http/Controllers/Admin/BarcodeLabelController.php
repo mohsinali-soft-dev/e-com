@@ -21,7 +21,7 @@ class BarcodeLabelController extends Controller
         if ($variantId && ! $variant) {
             abort(422, 'Variant does not belong to product.');
         }
-        $barcode = $variant?->primaryBarcode?->barcode ?? $product->primaryBarcode?->barcode;
+        $barcode = $variant ? $variant->primaryBarcode?->barcode : $product->primaryBarcode?->barcode;
         abort_unless($barcode, 422, 'No barcode is available.');
 
         return view('admin.barcode-labels.print', compact('product', 'variant', 'barcode') + ['quantity' => $data['quantity']]);

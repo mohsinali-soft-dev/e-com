@@ -11,6 +11,7 @@ return new class extends Migration
         Schema::create('stock_adjustments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('product_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('product_variant_id')->nullable()->constrained()->nullOnDelete();
             $table->enum('type', ['increase', 'decrease']);
             $table->decimal('quantity', 12, 3);
             $table->decimal('stock_before', 12, 3);

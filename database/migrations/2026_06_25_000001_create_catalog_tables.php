@@ -44,6 +44,7 @@ return new class extends Migration
             $table->string('slug')->unique();
             $table->string('sku')->unique();
             $table->text('description')->nullable();
+            $table->string('image_path')->nullable();
             $table->enum('sale_type', ['piece', 'weight', 'volume'])->default('piece');
             $table->decimal('purchase_price', 12, 2)->default(0);
             $table->decimal('selling_price', 12, 2)->default(0);
@@ -62,6 +63,7 @@ return new class extends Migration
             $table->decimal('purchase_price', 12, 2)->default(0);
             $table->decimal('selling_price', 12, 2)->default(0);
             $table->decimal('stock_quantity', 12, 3)->default(0);
+            $table->decimal('low_stock_alert', 12, 3)->default(0);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });

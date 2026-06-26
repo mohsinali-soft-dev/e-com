@@ -66,20 +66,44 @@
                             <details class="variant-dropdown">
                                 <summary>{{ $product->variants_count }} variant(s)</summary>
                                 <div class="variant-panel">
-                                    @foreach($product->variants as $variant)
-                                        <div class="variant-item">
-                                            <div>
-                                                <strong>{{ $variant->name }}</strong>
-                                                <small>{{ $variant->sku }}</small>
-                                                <small>{{ $variant->primaryBarcode?->barcode ?? 'No barcode' }}</small>
-                                            </div>
-                                            <div>
-                                                <strong>{{ $adminSetting->currency }} {{ number_format($variant->selling_price, 2) }}</strong>
-                                                <small>Stock: {{ $variant->stock_quantity }}</small>
-                                                <small>{{ $variant->is_active ? 'Active' : 'Inactive' }}</small>
-                                            </div>
-                                        </div>
-                                    @endforeach
+                                    <table class="variant-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Variant</th>
+                                                <th>SKU</th>
+                                                <th>Barcode</th>
+                                                <th>Price</th>
+                                                <th>Stock</th>
+                                                <th>Status</th>
+                                                <th>Label</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        @foreach($product->variants as $variant)
+                                            <tr>
+                                                <td><strong>{{ $variant->name }}</strong></td>
+                                                <td>{{ $variant->sku }}</td>
+                                                <td>{{ $variant->primaryBarcode?->barcode ?? '-' }}</td>
+                                                <td>{{ $adminSetting->currency }} {{ number_format($variant->selling_price, 2) }}</td>
+                                                <td>{{ $variant->stock_quantity }}</td>
+                                                <td><span class="badge">{{ $variant->is_active ? 'Active' : 'Inactive' }}</span></td>
+                                                <td>
+                                                    @if($variant->primaryBarcode)
+                                                        <form action="{{ route('admin.barcode-labels.print') }}" method="POST" target="_blank" class="stack">
+                                                            @csrf
+                                                            <input type="hidden" name="product_id" value="{{ $product->id }}">
+                                                            <input type="hidden" name="product_variant_id" value="{{ $variant->id }}">
+                                                            <input type="number" name="quantity" min="1" max="200" value="1" aria-label="Variant label quantity" style="width:72px;">
+                                                            <button class="btn btn-light" type="submit">Print</button>
+                                                        </form>
+                                                    @else
+                                                        <span class="muted">No barcode</span>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                        </tbody>
+                                    </table>
                                 </div>
                             </details>
                         @else
@@ -117,43 +141,4 @@
     </div>
     <div style="margin-top:16px;">{{ $products->links() }}</div>
 </div>
-
-<style>
-    .variant-dropdown summary {
-        cursor: pointer;
-        font-weight: 800;
-        color: var(--primary);
-        white-space: nowrap;
-    }
-    .variant-panel {
-        position: absolute;
-        z-index: 30;
-        min-width: 360px;
-        max-width: 520px;
-        background: var(--surface);
-        border: 1px solid var(--line);
-        border-radius: 16px;
-        box-shadow: var(--shadow);
-        padding: 10px;
-        margin-top: 10px;
-    }
-    .variant-item {
-        display: grid;
-        grid-template-columns: 1.2fr .8fr;
-        gap: 12px;
-        padding: 10px;
-        border-bottom: 1px solid var(--line);
-    }
-    .variant-item:last-child { border-bottom: 0; }
-    .variant-item small { display:block; color: var(--muted); margin-top: 3px; }
-    @media (max-width: 760px) {
-        .variant-panel {
-            position: static;
-            min-width: 260px;
-        }
-        .variant-item {
-            grid-template-columns: 1fr;
-        }
-    }
-</style>
 @endsection

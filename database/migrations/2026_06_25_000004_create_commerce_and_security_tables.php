@@ -78,6 +78,7 @@ return new class extends Migration
             $table->id();
             $table->string('store_name')->default('E-Com POS');
             $table->string('logo_path')->nullable();
+            $table->string('favicon_path')->nullable();
             $table->string('currency', 10)->default('Rs.');
             $table->decimal('tax_rate', 5, 2)->default(0);
             $table->text('invoice_footer')->nullable();
@@ -119,10 +120,6 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::table('product_variants', function (Blueprint $table) {
-            $table->decimal('low_stock_alert', 12, 3)->default(0)->after('stock_quantity');
-        });
-
         DB::table('settings')->insert([
             'store_name' => 'E-Com POS',
             'currency' => 'Rs.',
@@ -136,7 +133,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('product_variants', fn (Blueprint $table) => $table->dropColumn('low_stock_alert'));
         Schema::dropIfExists('sale_return_items');
         Schema::dropIfExists('sale_returns');
         Schema::table('sale_items', function (Blueprint $table) {

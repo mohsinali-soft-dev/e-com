@@ -1,4 +1,42 @@
-<!doctype html><html><head><meta charset="utf-8"><title>Barcode Labels</title><style>@page{margin:8mm}.labels{display:grid;grid-template-columns:repeat(auto-fill,45mm);gap:3mm}.label{width:45mm;min-height:30mm;border:1px dashed #aaa;padding:3mm;text-align:center;font-family:Arial}.barcode{height:38px;display:flex;justify-content:center;align-items:stretch;gap:0;margin:3px auto;overflow:hidden}.barcode i{display:block;width:1px;flex:0 0 1px}.barcode .bar{background:#000}.name{font-weight:bold;font-size:12px}.price{font-size:14px;font-weight:bold}@media print{button{display:none}}</style></head><body><button onclick="print()">Print</button><div class="labels">@for($i=0;$i<$quantity;$i++)<div class="label"><div class="name">{{ $product->name }} {{ $variant?->name }}</div><div class="price">{{ \App\Models\Setting::current()->currency }} {{ number_format($variant?->selling_price??$product->selling_price,2) }}</div><div class="barcode" data-code="{{ strtoupper($barcode) }}"></div><div>{{ $barcode }}</div></div>@endfor</div><script>
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Barcode Labels</title>
+    <style>
+        @page{margin:8mm}
+        *{box-sizing:border-box}
+        body{margin:0;font-family:Arial,sans-serif;color:#111}
+        button{margin:0 0 10px;padding:8px 12px;border:1px solid #111;background:#fff;cursor:pointer}
+        .labels{display:grid;grid-template-columns:repeat(auto-fill,45mm);gap:3mm}
+        .label{width:45mm;min-height:30mm;border:1px dashed #aaa;padding:3mm;text-align:center;break-inside:avoid}
+        .name{font-weight:700;font-size:12px;line-height:1.2}
+        .variant{font-size:10px;margin-top:1mm}
+        .price{font-size:14px;font-weight:700;margin-top:1mm}
+        .barcode{height:38px;display:flex;justify-content:center;align-items:stretch;gap:0;margin:3px auto;overflow:hidden}
+        .barcode i{display:block;width:1px;flex:0 0 1px}
+        .barcode .bar{background:#000}
+        .number{font-size:10px;letter-spacing:.04em}
+        @media print{button{display:none}.label{border-color:#ddd}}
+    </style>
+</head>
+<body>
+<button type="button" onclick="print()">Print</button>
+<div class="labels">
+    @for($i = 0; $i < $quantity; $i++)
+        <div class="label">
+            <div class="name">{{ $product->name }}</div>
+            @if($variant)<div class="variant">{{ $variant->name }}</div>@endif
+            <div class="price">{{ \App\Models\Setting::current()->currency }} {{ number_format($variant?->selling_price ?? $product->selling_price, 2) }}</div>
+            <div class="barcode" data-code="{{ strtoupper($barcode) }}"></div>
+            <div class="number">{{ $barcode }}</div>
+        </div>
+    @endfor
+</div>
+<script>
 const patterns={'0':'101001101101','1':'110100101011','2':'101100101011','3':'110110010101','4':'101001101011','5':'110100110101','6':'101100110101','7':'101001011011','8':'110100101101','9':'101100101101','A':'110101001011','B':'101101001011','C':'110110100101','D':'101011001011','E':'110101100101','F':'101101100101','G':'101010011011','H':'110101001101','I':'101101001101','J':'101011001101','K':'110101010011','L':'101101010011','M':'110110101001','N':'101011010011','O':'110101101001','P':'101101101001','Q':'101010110011','R':'110101011001','S':'101101011001','T':'101011011001','U':'110010101011','V':'100110101011','W':'110011010101','X':'100101101011','Y':'110010110101','Z':'100110110101','-':'100101011011','.':'110010101101',' ':'100110101101','*':'100101101101'};
-document.querySelectorAll('.barcode').forEach(el=>{const value='*'+el.dataset.code.replace(/[^0-9A-Z.\- ]/g,'')+'*';const bits=[...value].map(c=>patterns[c]).join('0');el.innerHTML='0000000000'.concat(bits,'0000000000').split('').map(bit=>`<i class="${bit==='1'?'bar':''}"></i>`).join('')});window.onload=()=>window.print();
-</script></body></html>
+document.querySelectorAll('.barcode').forEach(el=>{const value='*'+el.dataset.code.replace(/[^0-9A-Z.\- ]/g,'')+'*';const bits=[...value].map(c=>patterns[c]).join('0');el.innerHTML='0000000000'.concat(bits,'0000000000').split('').map(bit=>`<i class="${bit==='1'?'bar':''}"></i>`).join('')});
+window.onload=()=>window.print();
+</script>
+</body>
+</html>

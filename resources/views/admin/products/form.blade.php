@@ -78,21 +78,6 @@
     </div>
 </div>
 
-<script>
-    document.getElementById('imageInput')?.addEventListener('change', function (event) {
-        const preview = document.getElementById('imagePreview');
-        const file = event.target.files?.[0];
-        if (!file) return;
-        preview.src = URL.createObjectURL(file);
-        preview.style.display = 'block';
-        preview.onload = () => URL.revokeObjectURL(preview.src);
-    });
-
-    document.getElementById('stockQuantity')?.addEventListener('input', function () {
-        document.getElementById('lowStockAlert').max = Math.max(Number(this.value || 0), 0);
-    });
-</script>
-
 <label>Description</label>
 <textarea name="description" rows="4" placeholder="Product details">{{ old('description', $product->description ?? '') }}</textarea>
 

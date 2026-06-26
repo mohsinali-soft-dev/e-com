@@ -68,8 +68,8 @@ class ProductVariantController extends Controller
     public function destroy(Product $product, ProductVariant $variant)
     {
         abort_unless($variant->product_id === $product->id, 404);
-        if ($variant->stock_quantity > 0 || $variant->saleItems()->exists()) {
-            return back()->withErrors(['variant' => 'A variant with stock or sales history cannot be deleted.']);
+        if ($variant->stock_quantity > 0 || $variant->saleItems()->exists() || $variant->orderItems()->exists() || $variant->stockAdjustments()->exists()) {
+            return back()->withErrors(['variant' => 'A variant with stock, sales, or order history cannot be deleted.']);
         }
         $variant->delete();
         if (! $product->variants()->exists()) {
@@ -83,9 +83,15 @@ class ProductVariantController extends Controller
     {
         return $request->validate([
             'name' => ['required', 'string', 'max:100'],
-            'sku' => ['required', 'string', 'max:100', Rule::unique('product_variants')->ignore($variant)],
+            'sku' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('product_variants')->ignore($variant),
+                Rule::unique('products', 'sku'),
+            ],
             'purchase_price' => ['required', 'numeric', 'min:0'],
-            'selling_price' => ['required', 'numeric', 'min:0'],
+            'selling_price' => ['required', 'numeric', 'min:0', 'gte:purchase_price'],
             'stock_quantity' => ['required', 'numeric', 'min:0'],
             'low_stock_alert' => ['required', 'numeric', 'min:0', 'lte:stock_quantity'],
             'is_active' => ['nullable', 'boolean'],

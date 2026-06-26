@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Brand;
 use App\Models\Category;
-use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductBarcode;
 use App\Models\StockAdjustment;
@@ -133,7 +132,14 @@ class ProductController extends Controller
 
     public function destroy(Product $product)
     {
-        if ($product->saleItems()->exists() || $product->stockAdjustments()->exists() || OrderItem::where('product_id', $product->id)->exists()) {
+        if ($product->saleItems()->exists()
+            || $product->orderItems()->exists()
+            || $product->stockAdjustments()->exists()
+            || $product->variants()->where(function ($query) {
+                $query->whereHas('saleItems')
+                    ->orWhereHas('orderItems')
+                    ->orWhereHas('stockAdjustments');
+            })->exists()) {
             return back()->withErrors(['product' => 'Products with stock, sales, or order history cannot be deleted. Deactivate the product instead.']);
         }
 
@@ -162,12 +168,18 @@ class ProductController extends Controller
             'brand_id' => ['nullable', 'exists:brands,id'],
             'unit_id' => ['required', 'exists:units,id'],
             'name' => ['required', 'string', 'max:255'],
-            'sku' => ['required', 'string', 'max:100', Rule::unique('products', 'sku')->ignore($productId)],
+            'sku' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('products', 'sku')->ignore($productId),
+                Rule::unique('product_variants', 'sku'),
+            ],
             'description' => ['nullable', 'string'],
             'image' => ['nullable', 'image', 'max:2048'],
             'sale_type' => ['required', 'in:piece,weight,volume'],
             'purchase_price' => ['required', 'numeric', 'min:0'],
-            'selling_price' => ['required', 'numeric', 'min:0'],
+            'selling_price' => ['required', 'numeric', 'min:0', 'gte:purchase_price'],
             'stock_quantity' => ['required', 'numeric', 'min:0'],
             'low_stock_alert' => ['nullable', 'numeric', 'min:0', 'lte:stock_quantity'],
             'is_active' => ['nullable', 'boolean'],

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Setting extends Model
 {
-    protected $fillable = ['store_name', 'logo_path', 'favicon_path', 'currency', 'tax_rate', 'receipt_width', 'show_logo_on_receipt'];
+    protected $fillable = ['store_name', 'logo_path', 'favicon_path', 'currency', 'tax_rate', 'invoice_footer', 'receipt_width', 'show_logo_on_receipt'];
 
     protected function casts(): array
     {
