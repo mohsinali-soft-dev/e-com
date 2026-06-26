@@ -69,7 +69,7 @@
     </div>
     <div>
         <label>Stock Quantity</label>
-        <input id="stockQuantity" type="number" min="0" step="0.001" name="stock_quantity" value="{{ old('stock_quantity', $product->stock_quantity ?? 0) }}">
+        <input id="stockQuantity" type="number" min="0" step="0.01" name="stock_quantity" value="{{ old('stock_quantity', $product->stock_quantity ?? 0) }}">
     </div>
     <div>
         <label>Low Stock Alert</label>
