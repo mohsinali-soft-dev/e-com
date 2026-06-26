@@ -3,13 +3,21 @@
     if (!root) return;
 
     let cart = [];
+    let searchResults = [];
+    let activeIndex = -1;
+    let debounceTimer = null;
+    let currentController = null;
+
     const config = {
+        searchUrl: root.dataset.searchUrl,
         scanUrl: root.dataset.scanUrl,
         checkoutUrl: root.dataset.checkoutUrl,
         csrf: root.dataset.csrf,
         currency: root.dataset.currency || '',
     };
-    const barcodeInput = document.getElementById('barcodeInput');
+
+    const searchInput = document.getElementById('barcodeInput');
+    const searchPanel = document.getElementById('posSearchResults');
     const posMessage = document.getElementById('posMessage');
     const cartBody = document.getElementById('cartBody');
     const subtotalElement = document.getElementById('subtotal');
@@ -26,10 +34,12 @@
     const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, character => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
     })[character]);
+
     const setMessage = (message, className = 'muted') => {
         posMessage.className = className;
         posMessage.textContent = message;
     };
+
     const wholeQuantity = item => item.sale_type === 'piece';
     const normalizeQuantity = (item, value) => {
         const minimum = wholeQuantity(item) ? 1 : 0.01;
@@ -37,41 +47,191 @@
         return wholeQuantity(item) ? Math.floor(parsed) : parsed;
     };
 
-    barcodeInput?.addEventListener('keydown', event => {
+    searchInput?.addEventListener('input', () => {
+        const query = searchInput.value.trim();
+        clearTimeout(debounceTimer);
+        if (query.length < 2) {
+            closeSearchPanel();
+            return;
+        }
+        debounceTimer = setTimeout(() => searchProducts(query), 250);
+    });
+
+    searchInput?.addEventListener('keydown', async event => {
+        if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            moveActive(1);
+            return;
+        }
+        if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            moveActive(-1);
+            return;
+        }
+        if (event.key === 'Escape') {
+            closeSearchPanel();
+            return;
+        }
         if (event.key === 'Enter') {
             event.preventDefault();
-            scanCurrentBarcode();
+            await enterSearch();
         }
     });
+
+    searchPanel?.addEventListener('mousedown', event => {
+        const item = event.target.closest('[data-search-result]');
+        if (!item) return;
+        const index = Number(item.dataset.searchResult);
+        const result = searchResults[index];
+        if (result && result.selectable) {
+            addToCart(result);
+            resetSearchInput();
+        }
+    });
+
+    document.addEventListener('click', event => {
+        if (!root.contains(event.target)) closeSearchPanel();
+    });
+
     discountInput?.addEventListener('input', renderTotals);
     paidAmount?.addEventListener('input', renderTotals);
-    root.querySelector('[data-scan-current]')?.addEventListener('click', scanCurrentBarcode);
+    root.querySelector('[data-clear-search]')?.addEventListener('click', resetSearchInput);
     root.querySelector('[data-clear-cart]')?.addEventListener('click', () => clearCart());
     checkoutButton?.addEventListener('click', checkout);
 
-    async function scanCurrentBarcode() {
-        const barcode = barcodeInput.value.trim();
-        if (!barcode) return;
-        setMessage('Searching product...');
-        try {
-            const response = await fetch(config.scanUrl, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': config.csrf},
-                body: JSON.stringify({barcode}),
-            });
-            const data = await response.json();
-            if (!response.ok || !data.success) throw new Error(data.message || 'Product not found.');
-            addToCart(data.product);
-            setMessage(`Added ${data.product.name}.`, 'text-success');
-        } catch (error) {
-            setMessage(error.message, 'text-danger');
-        } finally {
-            barcodeInput.value = '';
-            barcodeInput.focus();
+    async function enterSearch() {
+        if (activeIndex >= 0 && searchResults[activeIndex]) {
+            const result = searchResults[activeIndex];
+            if (!result.selectable) {
+                setMessage('This item is out of stock.', 'text-danger');
+                return;
+            }
+            addToCart(result);
+            resetSearchInput();
+            return;
+        }
+
+        const query = searchInput.value.trim();
+        if (!query) return;
+
+        const results = await searchProducts(query, true);
+        const exact = results.find(item => item.exact && item.selectable);
+        if (exact) {
+            addToCart(exact);
+            resetSearchInput();
+            return;
+        }
+        const firstSelectable = results.find(item => item.selectable);
+        if (results.length === 1 && firstSelectable) {
+            addToCart(firstSelectable);
+            resetSearchInput();
+            return;
+        }
+        if (!results.length) {
+            setMessage('No product found.', 'text-danger');
         }
     }
 
+    async function searchProducts(query, immediate = false) {
+        if (!config.searchUrl) return [];
+        if (currentController) currentController.abort();
+        currentController = new AbortController();
+
+        if (immediate) setMessage('Searching product...');
+
+        try {
+            const url = new URL(config.searchUrl, window.location.origin);
+            url.searchParams.set('q', query);
+            const response = await fetch(url.toString(), {
+                headers: {'Accept': 'application/json'},
+                signal: currentController.signal,
+            });
+            const data = await response.json();
+            if (!response.ok || !data.success) throw new Error(data.message || 'Search failed.');
+            searchResults = data.results || [];
+            activeIndex = searchResults.findIndex(item => item.selectable);
+            renderSearchPanel();
+            return searchResults;
+        } catch (error) {
+            if (error.name !== 'AbortError') setMessage(error.message, 'text-danger');
+            return [];
+        }
+    }
+
+    function renderSearchPanel() {
+        if (!searchResults.length) {
+            searchPanel.innerHTML = '<div class="pos-search-empty">No matching products found.</div>';
+            openSearchPanel();
+            return;
+        }
+
+        searchPanel.innerHTML = searchResults.map((item, index) => {
+            const disabled = !item.selectable;
+            const active = index === activeIndex ? ' is-active' : '';
+            const image = item.image_url
+                ? `<img class="pos-search-image" src="${escapeHtml(item.image_url)}" alt="${escapeHtml(item.name)}">`
+                : '<div class="pos-search-image pos-search-image-empty">N/A</div>';
+            const stockCopy = disabled ? 'Out of Stock' : `Stock: ${escapeHtml(item.stock)} ${escapeHtml(item.unit || '')}`;
+            return `
+                <button class="pos-search-item${active}${disabled ? ' is-disabled' : ''}" type="button" role="option" aria-selected="${index === activeIndex ? 'true' : 'false'}" data-search-result="${index}" ${disabled ? 'disabled' : ''}>
+                    ${image}
+                    <span class="pos-search-copy">
+                        <strong>${escapeHtml(item.name)}</strong>
+                        <small>SKU: ${escapeHtml(item.sku || '-')} · Barcode: ${escapeHtml(item.barcode || '-')}</small>
+                        <small>${escapeHtml(config.currency)} ${money(item.price)} · ${stockCopy}</small>
+                    </span>
+                    <span class="pos-search-tag">${disabled ? 'Out' : matchLabel(item.match_type)}</span>
+                </button>`;
+        }).join('');
+        openSearchPanel();
+    }
+
+    function matchLabel(type) {
+        return {
+            exact_barcode: 'Barcode',
+            exact_sku: 'SKU',
+            exact_variant_barcode: 'Variant barcode',
+            exact_variant_sku: 'Variant SKU',
+            product_name: 'Name',
+            variant_name: 'Variant',
+        }[type] || 'Match';
+    }
+
+    function moveActive(direction) {
+        if (!searchResults.length) return;
+        const selectableIndexes = searchResults.map((item, index) => item.selectable ? index : null).filter(index => index !== null);
+        if (!selectableIndexes.length) return;
+        const currentPosition = selectableIndexes.indexOf(activeIndex);
+        const nextPosition = currentPosition === -1
+            ? 0
+            : (currentPosition + direction + selectableIndexes.length) % selectableIndexes.length;
+        activeIndex = selectableIndexes[nextPosition];
+        renderSearchPanel();
+    }
+
+    function openSearchPanel() {
+        searchPanel.hidden = false;
+        searchInput.setAttribute('aria-expanded', 'true');
+    }
+
+    function closeSearchPanel() {
+        searchPanel.hidden = true;
+        searchInput.setAttribute('aria-expanded', 'false');
+        activeIndex = -1;
+    }
+
+    function resetSearchInput() {
+        searchInput.value = '';
+        searchResults = [];
+        closeSearchPanel();
+        searchInput.focus();
+    }
+
     function addToCart(product) {
+        if (!product.selectable && product.selectable !== undefined) {
+            setMessage('This item is out of stock.', 'text-danger');
+            return;
+        }
         const key = `${product.id}:${product.variant_id || 0}`;
         const existing = cart.find(item => item.key === key);
         if (existing) {
@@ -85,6 +245,7 @@
             cart.push({...product, key, price: Number(product.price), stock: Number(product.stock), qty: 1});
         }
         renderCart();
+        setMessage(`Added ${product.name}.`, 'text-success');
     }
 
     function updateQty(key, value) {
@@ -105,7 +266,7 @@
         paidAmount.value = 0;
         renderCart();
         if (showMessage) setMessage('Cart cleared.');
-        barcodeInput.focus();
+        resetSearchInput();
     }
 
     function totals() {
@@ -130,7 +291,7 @@
             cartBody.innerHTML = cart.map(item => `
                 <tr>
                     <td><strong>${escapeHtml(item.name)}</strong><br><small>${escapeHtml(item.sku)} - Stock ${item.stock}</small></td>
-                    <td>${escapeHtml(item.barcode)}</td>
+                    <td>${escapeHtml(item.barcode || '-')}</td>
                     <td>${escapeHtml(config.currency)} ${money(item.price)}</td>
                     <td><input type="number" min="${wholeQuantity(item) ? 1 : 0.01}" max="${item.stock}" step="${wholeQuantity(item) ? 1 : 0.01}" value="${item.qty}" data-cart-qty="${escapeHtml(item.key)}" style="width:105px;"></td>
                     <td><strong>${escapeHtml(config.currency)} ${money(item.price * item.qty)}</strong></td>
@@ -188,4 +349,6 @@
             checkoutButton.textContent = 'Complete Sale';
         }
     }
+
+    searchInput?.focus();
 })();
