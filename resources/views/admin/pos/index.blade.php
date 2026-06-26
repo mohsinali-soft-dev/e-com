@@ -77,6 +77,6 @@
 </div>
 
 @push('scripts')
-    @vite('resources/js/pos.js')
+    @vite(['resources/css/pos.css', 'resources/js/pos.js'])
 @endpush
 @endsection
