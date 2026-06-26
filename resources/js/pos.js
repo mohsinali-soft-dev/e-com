@@ -95,7 +95,7 @@
 
     discountInput?.addEventListener('input', renderTotals);
     paidAmount?.addEventListener('input', renderTotals);
-    root.querySelector('[data-clear-search]')?.addEventListener('click', resetSearchInput);
+    root.querySelector('[data-add-current]')?.addEventListener('click', () => enterSearch());
     root.querySelector('[data-clear-cart]')?.addEventListener('click', () => clearCart());
     checkoutButton?.addEventListener('click', checkout);
 
