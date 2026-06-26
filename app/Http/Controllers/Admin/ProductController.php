@@ -22,12 +22,14 @@ class ProductController extends Controller
     {
         $search = $request->string('search')->trim()->toString();
 
-        $products = Product::with(['category', 'brand', 'unit', 'primaryBarcode'])
+        $products = Product::with(['category', 'brand', 'unit', 'primaryBarcode', 'variants.primaryBarcode'])
+            ->withCount('variants')
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($query) use ($search) {
                     $query->where('name', 'like', "%{$search}%")
                         ->orWhere('sku', 'like', "%{$search}%")
                         ->orWhereHas('barcodes', fn ($barcodes) => $barcodes->where('barcode', 'like', "%{$search}%"))
+                        ->orWhereHas('variants', fn ($variants) => $variants->where('name', 'like', "%{$search}%")->orWhere('sku', 'like', "%{$search}%"))
                         ->orWhereHas('category', fn ($category) => $category->where('name', 'like', "%{$search}%"))
                         ->orWhereHas('brand', fn ($brand) => $brand->where('name', 'like', "%{$search}%"));
                 });
