@@ -55,6 +55,7 @@ Route::middleware('auth')->group(function () {
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin,manager,cashier'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
+    Route::get('/pos/search', [PosController::class, 'search'])->name('pos.search');
     Route::post('/pos/scan', [PosController::class, 'scan'])->name('pos.scan');
     Route::post('/pos/checkout', [PosController::class, 'checkout'])->name('pos.checkout');
     Route::get('/sales', [SaleController::class, 'index'])->name('sales.index');
