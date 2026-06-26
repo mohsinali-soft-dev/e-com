@@ -18,7 +18,7 @@
             <label for="barcodeInput">Smart POS Search</label>
             <div class="pos-search-box">
                 <input id="barcodeInput" type="search" placeholder="Scan barcode or search by barcode, SKU, or product name..." autofocus autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="posSearchResults">
-                <button class="btn btn-light" type="button" data-clear-search>Clear</button>
+                <button class="btn" type="button" data-add-current>Add Product</button>
                 <button class="btn btn-light" type="button" data-clear-cart>Clear Cart</button>
             </div>
             <div id="posSearchResults" class="pos-search-results" role="listbox" hidden></div>
